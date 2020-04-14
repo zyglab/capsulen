@@ -11,6 +11,9 @@ import Time
 port makeLogin : E.Value -> Cmd msg
 
 
+port sendUserHash : (String -> msg) -> Sub msg
+
+
 type alias UserHash =
     String
 
@@ -44,6 +47,7 @@ type Msg
     | SetUserLogin String String
     | Login
     | ClearFlash
+    | GotUserHash String
 
 
 type FlashMsg
@@ -94,7 +98,7 @@ main =
         { init = \_ -> ( baseModel, Cmd.none )
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> Sub.batch [ sendUserHash GotUserHash ]
         }
 
 
@@ -183,12 +187,15 @@ update msg ({ login } as model) =
                         |> done
 
                 ( _, _ ) ->
-                    ( model, makeLogin <| userLoginEncode login )
+                    ( { model | login = { username = "", password = "" } }, makeLogin <| userLoginEncode login )
 
         ClearFlash ->
             model
                 |> clearFlash
                 |> done
+
+        GotUserHash hash ->
+            done { model | user = Just hash }
 
         NoOp ->
             done model
